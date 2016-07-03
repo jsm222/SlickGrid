@@ -17,7 +17,7 @@
  */
 
 // make sure required JavaScript modules are loaded
-if (typeof jQuery === "undefined") {
+/*if (typeof jQuery === "undefined") {
   throw "SlickGrid requires jquery module to be loaded";
 }
 if (!jQuery.fn.drag) {
@@ -25,15 +25,25 @@ if (!jQuery.fn.drag) {
 }
 if (typeof Slick === "undefined") {
   throw "slick.core.js not loaded";
-}
+}*/
+// Universal module definition
+(function (root, factory) 
+
+{
+  if (typeof define === 'function' && define.amd) {
+    // AMD. Register as an anonymous module.
+    define(['jquery', './slick.core', 'jquery.event/drag'], factory);
+ } else {
+    // Browser globals
+    root.Slick.Grid = factory(root.jQuery, root.Slick);
+  }
+}(this, function ($, Slick) { 
 
 
-(function ($) {
   // Slick.Grid
-  $.extend(true, window, {
-    Slick: {
+  $.extend(true, Slick, {
       Grid: SlickGrid
-    }
+    
   });
 
   // shared across all grids on the page
@@ -3685,5 +3695,8 @@ if (typeof Slick === "undefined") {
     });
 
     init();
-  }
-}(jQuery));
+    }
+  return SlickGrid;
+
+}
+        )); 

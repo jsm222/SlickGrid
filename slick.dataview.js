@@ -1,6 +1,17 @@
-(function ($) {
-  $.extend(true, window, {
-    Slick: {
+// Universal module definition
+(function (root, factory) 
+{
+  if (typeof define === 'function' && define.amd) {
+    // AMD. Register as an anonymous module.
+    define(['jquery', './slick.core', 'jquery.event/drag'], factory);
+ } else {
+    // Browser globals
+    root.Slick.Data = root.Slick.Data || {};
+    root.Slick.Data.Dataview = factory(root.jQuery, root.Slick);
+  }
+
+}(this, function ($,Slick) {
+  $.extend(true, Slick, {
       Data: {
         DataView: DataView,
         Aggregators: {
@@ -10,7 +21,7 @@
           Sum: SumAggregator
         }
       }
-    }
+    
   });
 
 
@@ -1138,4 +1149,6 @@
   // TODO:  add more built-in aggregators
   // TODO:  merge common aggregators in one to prevent needles iterating
 
-})(jQuery);
+  return DataView;
+}
+        )); 

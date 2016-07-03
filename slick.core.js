@@ -4,7 +4,18 @@
  * @namespace Slick
  */
 
-(function ($) {
+// Universal module definition
+(function (root, factory) 
+{
+  if (typeof define === 'function' && define.amd) {
+    // AMD. Register as an anonymous module.
+ define(['jquery'],factory); 
+  } else {
+    // Browser globals
+    root.Slick = factory($);
+  }
+}(this, function ($) {
+ 
   // register namespace
   $.extend(true, window, {
     "Slick": {
@@ -43,6 +54,7 @@
       }
     }
   });
+
 
   /***
    * An event object for passing data to event handlers and letting them control propagation.
@@ -479,6 +491,5 @@
       return (activeEditController ? activeEditController.cancelCurrentEdit() : true);
     };
   }
-})(jQuery);
-
-
+return Slick;
+}));

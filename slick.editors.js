@@ -3,22 +3,38 @@
  * @module Editors
  * @namespace Slick
  */
+/***
+ * Contains basic SlickGrid editors.
+ * @module Editors
+ * @namespace Slick
+ */
 
-(function ($) {
+// Universal module definition
+(function (root, factory) {
+  if (typeof define === 'function' && define.amd) {
+    // AMD. Register as an anonymous module.
+    define(['jquery','./slick.core','select2'], factory);
+  } else {
+    // Browser globals
+    root.Slick.Editors = factory(root.jQuery,root.Slick);
+  }
+}(this, function ($,Slick) {
   // register namespace
-  $.extend(true, window, {
-    "Slick": {
+  $.extend(true, Slick, {
       "Editors": {
         "Text": TextEditor,
         "Integer": IntegerEditor,
-		"Float": FloatEditor,
+	 "Float": FloatEditor,
         "Date": DateEditor,
         "YesNoSelect": YesNoSelectEditor,
         "Checkbox": CheckboxEditor,
         "PercentComplete": PercentCompleteEditor,
-        "LongText": LongTextEditor
+        "LongText": LongTextEditor,
+        "FileSizeEditor":FileSizeEditor,
+        "SelectOptionEditor":SelectOptionEditor
+        
       }
-    }
+    
   });
 
   function TextEditor(args) {
@@ -518,7 +534,242 @@
 
     this.init();
   }
+function SelectOptionEditor(args) {
+    var $select = null; 
+    var defaultValue;
+    var scope = this;
+    this.options =null;
 
+
+    this.init = function() {
+      
+if(args.column.seloptions.options!=undefined) {
+  this.options = args.column.seloptions.options;
+  config = args.column.seloptions;
+$select = $('<div style="width:100%;">');
+$select.appendTo(args.container);
+	$(args.container).css({height:'auto'});
+	
+	sel2config = {
+	multiple:config.multiple,	
+	placeholder: config.txt,
+	minimumInputLength: 1,
+	formatResult:function(item) {
+return item[config.displayField];
+},
+formatSelection: function(item) {
+        return item[config.displayField];
+    },
+id: function(item) { 
+return item[config.valueField]; }
+}
+sel2config.minimumInputLength=0;
+sel2config.data=this.options;
+$($select).select2(sel2config);
+
+ 	
+ 	
+ 	
+ 	
+    
+   
+} else {
+var txt = args.column.seloptions.txt;
+$select = $('<div style="width:100%;">');
+$select.appendTo(args.container);
+	$(args.container).css({height:'auto'});
+var displayName = args.column.seloptions.displayName;
+ 	$($select).select2({
+	multiple:true,	
+	placeholder: txt,
+	displayValue:displayName,
+	minimumInputLength: 1,
+	initSelection: function (item, callback) {
+  	var data = $select.select2("val");
+        
+            callback(data);
+        },
+
+
+	ajax: {
+	url: args.column.seloptions.url,
+		dataType: 'json',
+		quietMillis: 100,
+		data: function (term, page) { // page is the one-based page number tracked by Select2
+		return {
+		q: term, //search term
+		page_limit: 10, // page size
+		page: page // page number
+		
+};
+},
+results: function (data, page) {
+var more = (page * 10) < data.total; // whether or not there are more results available
+ 
+// notice we return the value of more so Select2 knows if more results can be loaded
+return {results: data.results, more: more};
+}
+},formatResult:function(record) {
+return record[this.displayValue];
+},
+formatSelection: function(record) {
+        return record[this.displayValue];
+    },
+id: function(record) { 
+return record.id; }
+});
+
+}
+
+
+
+    this.destroy = function () {
+$($select).select2("destroy");
+      $select.remove();
+      $(args.container).css('height','');
+    };
+
+    this.focus = function () {
+      $select.focus();
+    };
+
+    this.loadValue = function (item) {
+        $($select).select2("data",item[args.column.field]);
+        defaultValue=item[args.column.field][args.column.seloptions.valueField];
+        
+      
+}
+    this.serializeValue = function () {
+serializedvalue = $select.select2("data");
+return serializedvalue;
+},
+
+
+
+
+    
+
+    this.applyValue = function (item, state) {
+      
+                item[args.column.field]=state;
+                
+              },
+    
+    
+
+    this.isValueChanged = function () {
+      return ($($select).select2('val') != defaultValue);
+    };
+
+    this.validate = function () {
+      return {
+        valid: true,
+        msg: null
+      };
+    };
+}
+    this.init();
+  }
+
+function FileSizeEditor(args) {
+    var $input;
+    var defaultValue;
+    var scope = this;
+
+    this.init = function () {
+      $input = $("<INPUT type=text class='editor-text' />")
+          .appendTo(args.container)
+          .bind("keydown.nav", function (e) {
+            if (e.keyCode === $.ui.keyCode.LEFT || e.keyCode === $.ui.keyCode.RIGHT) {
+              e.stopImmediatePropagation();
+            }
+          })
+          .focus()
+          .select();
+    };
+
+    this.destroy = function () {
+      $input.remove();
+    };
+
+    this.focus = function () {
+      $input.focus();
+    };
+
+    this.getValue = function () {
+      return $input.val();
+    };
+
+    this.setValue = function (val) {
+      $input.val(val);
+    };
+
+    this.loadValue = function (item) {
+      var defaultValue = item[args.column.field] || "",bytes,fmtValue="";
+        bytes = Number(defaultValue);
+        var types = ['KB', 'MB', 'GB', 'TB', 'PB' ],i=0;
+	var posttxt = 0;
+	if (bytes === 0)  { defaultValue = '0 KB';} else {
+	
+	while( bytes >= 1024 ) {
+			posttxt++;
+			bytes = bytes / 1024;
+	}
+defaultValue = Number(bytes) + " " + types[posttxt];
+}
+	
+      $input.val(defaultValue);
+      $input[0].defaultValue = defaultValue;
+      $input.select();
+      return defaultValue;	
+    };
+
+    this.serializeValue = function () {
+	var arr=[],value=$input.val();
+	arr = value.match(new RegExp(/(^\d+(\.\d+)?)(\s+)?(KB|MB|GB|TB|PB)/i));
+        if(arr) {
+       switch(arr[4].toUpperCase()) {
+	case "KB" : value=Number(arr[1]*1024);break;
+	case "MB" : value=Number(arr[1]*Math.pow(1024,2));break;
+	case "GB" : value=Number(arr[1]*Math.pow(1024,3));break;
+	case "TB" : value=Number(arr[1]*Math.pow(1024,4));break;
+	case "PB" : value=Number(arr[1]*Math.pow(1024,5));break;
+	
+        }
+        value = Math.floor(value / 1024);
+        }
+		//stored in whole KB
+        
+        
+     return value;
+          
+     };
+
+    this.applyValue = function (item, state) {
+	 item[args.column.field] = state;
+
+    };
+
+    this.isValueChanged = function () {
+      return (!($input.val() == "" && defaultValue == null)) && ($input.val() != defaultValue);
+    };
+
+    this.validate = function () {
+      if (args.column.validator) {
+        var validationResults = args.column.validator($input.val());
+        if (!validationResults.valid) {
+          return validationResults;
+        }
+      }
+
+      return {
+        valid: true,
+        msg: null
+      };
+    };
+
+    this.init();
+  }
   /*
    * An example of a "detached" editor.
    * The UI is added onto document BODY and .position(), .show() and .hide() are implemented.
@@ -628,4 +879,7 @@
 
     this.init();
   }
-})(jQuery);
+  return Slick.Editors;
+}
+        
+)); 
